@@ -86,14 +86,9 @@ class FillEvent(Event):
 	
 	def calculate_ib_commision(self):
 		"""
-        Calculates the fees of trading based on an Interactive
-        Brokers fee structure for API, in USD.
+        计算交易费用，不包括印花
 
-        This does not include exchange or ECN fees.
-
-        Based on "US API Directed Orders":
-        https://www.interactivebrokers.com/en/index.php?f=commission&p=stocks2
         """
-		commision = max(5, 0.03 / 100.0 * self.quantity * self.fill_cost)
+		commision = max(5, 0.3 / 100.0 * self.fill_cost)
 		return commision
 	

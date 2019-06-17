@@ -16,7 +16,7 @@ symbol_list = ['AAPL','BRK-B','CVX','KO']
 
 data = HistoricCSVDataHandler(events, csv_dir, symbol_list)
 strategy = BuyAndHoldStrategy(data, events)
-portfolio = NaivePortfolio(data, events, '12/1/14')
+portfolio = NaivePortfolio(data, events, '2014-12-01 00:00:00')
 execution = SimulatedExecutionHandler(data, events)
 
 while True:
@@ -46,7 +46,11 @@ while True:
 
 results, curve = portfolio.output_summary_stats()
 
-curve[['equity_curve','total']].plot()
+print(results)
+print(curve['total'][-1])
+curve['total'].plot()
+plt.show()
+curve['equity_curve'].plot()
 plt.show()
 	
 
