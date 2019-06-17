@@ -11,7 +11,7 @@ from execution import SimulatedExecutionHandler
 
 
 events = queue.Queue()
-csv_dir = 'E://GitHub//quantstart-backtester//backtester//csv//'
+csv_dir = './/csv//'
 symbol_list = ['AAPL','BRK-B','CVX','KO']
 
 data = HistoricCSVDataHandler(events, csv_dir, symbol_list)
