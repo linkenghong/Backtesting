@@ -1,30 +1,20 @@
-#backtesting
+# backtesting
+此项目是基于[QuantStart](https://www.quantstart.com/articles)的系列文章并做了适当修改而来的。
 
-This repository is based on the article series written by [QuantStart]()
+### 模块
+* data.py：更新数据
+* strategy.py：策略模块
+* portfolio.py：投资组合模块及风险控制
+* execution.py：订单执行模块
 
-a hand-written (no copying and pasting here, noob!), slightly modified code, of an eightseven-part* 
+### 基本逻辑
+backtest.py是运行文件也是最基本的模块，它有内外两层循环，基本逻辑如下：
+* 外层循环是更新数据的（update_bars()），用于记录股票实时价格。当continue_backtest为false表明没有新数据，回测结束
+* 内层循环是以事件驱动方式处理事件，即事件队列不断出队直至为空后退回到外循环
+* 当价格变化（update_bars()），会入队MarketEvent事件
+* 当价格变化后，strategy模块会判断是否做出买入、卖出或继续持有的信号，而portfolio模块会根据实时价格更新现有资产总价格。即当出队事件是MarketEvent，会触发strategy.calculate_signals()及portfolio.update_timeindex()。如果发出操作信号，就会入队SignalEvent事件
+* 当收到买卖信号，portfolio模块会进行投资组合及风险控制，并产生订单order，在本程序中则只是简单的买100股操作信号所指定的股票。即当出队事件是SignalEvent，会触发portfolio.update_signal()，入队OrderEvent事件
+* 当收到订单，execution模块会执行订单，并发出完成信号，说明实际买卖股数、价格。即当出队事件是OrderEvent，会触发execution.execute_order()，入队FillEvent事件
+* 当收到订单执行完成信号，portfolio模块会更新持有资产情况及总价格。即当出队事件是FillEvent，会触发portfolio.update_fill()
 
-Event-Driven Backtesting with Python - Part I
-Event-Driven Backtesting with Python - Part II
-Event-Driven Backtesting with Python - Part III
-Event-Driven Backtesting with Python - Part IV
-Event-Driven Backtesting with Python - Part V
-Event-Driven Backtesting with Python - Part VI
-Event-Driven Backtesting with Python - Part VII
-Event-Driven Backtesting with Python - Part VIII
-###Purpose I wanted to put together the code from the articles to better understand the event-based part of the code. The basic logic of loop.py is:
 
-update_data() puts a MarketEvent() into the queue
-calculate_signals() processes the MarketEvent() and puts a SignalEvent() into the queue
-update_signal() processes an OrderEvent()
-execute_order() puts a FillEvent() into the queue
-update_fill() emits NO event so queue is Empty which breaks inner While loop
-return to outer While loop
-continue looping until data.continue_backtest == False, at which time loop will end after next MarketEvent()
-###Notes
-
-I say eightseven-part article series because Part VIII is specifically for corresponding with Interactive Broker's API, which is beyond the scope of the academic exercise this repository represents.
-It is important to note the aggregate of the code as-is from the series does not work. The code has missing logic and minor variable naming mismatches.
-I tried to keep my variable/method naming conventions very similar to their originals so one can more easily compare my code to the articles
-I took the liberty to make many minor logic changes (e.g. QuantStart's Portfolio() has dict((k,v) for k, v in [(s, 0) for s in self.symbol_list])) and I have {symbol: 0 for symbol in self.symbol_list}
-The QuantStart code is full of opportunities for DRY and encapsulation improvements, some of which I made and plenty more I left alone
