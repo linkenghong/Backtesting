@@ -1,6 +1,8 @@
 # backtesting
 此项目是基于[QuantStart](https://www.quantstart.com/articles)的系列文章并做了适当修改而来的。
 
+参考：
+
 ### 模块
 * data.py：更新数据
 * strategy.py：策略模块
