@@ -1,8 +1,9 @@
 # Special
 test.py
-Stk_Tick/
 
 
+# VScode
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
