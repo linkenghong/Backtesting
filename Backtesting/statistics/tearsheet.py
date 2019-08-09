@@ -365,83 +365,6 @@ class TearsheetStatistics(AbstractStatistics):
         ax.axis([0, 10, 0, 10])
         return ax
 
-    def _plot_txt_trade(self, stats, ax=None, **kwargs):
-        """
-        Outputs the statistics for the trades.
-        """
-        def format_perc(x, pos):
-            return '%.0f%%' % x
-
-        if ax is None:
-            ax = plt.gca()
-
-        if 'positions' not in stats:
-            num_trades = 0
-            win_pct = "N/A"
-            win_pct_str = "N/A"
-            avg_trd_pct = "N/A"
-            avg_win_pct = "N/A"
-            avg_loss_pct = "N/A"
-            max_win_pct = "N/A"
-            max_loss_pct = "N/A"
-        else:
-            pos = stats['positions']
-            num_trades = pos.shape[0]
-            win_pct = pos[pos["trade_pct"] > 0].shape[0] / float(num_trades)
-            win_pct_str = '{:.0%}'.format(win_pct)
-            avg_trd_pct = '{:.2%}'.format(np.mean(pos["trade_pct"]))
-            avg_win_pct = '{:.2%}'.format(np.mean(pos[pos["trade_pct"] > 0]["trade_pct"]))
-            avg_loss_pct = '{:.2%}'.format(np.mean(pos[pos["trade_pct"] <= 0]["trade_pct"]))
-            max_win_pct = '{:.2%}'.format(np.max(pos["trade_pct"]))
-            max_loss_pct = '{:.2%}'.format(np.min(pos["trade_pct"]))
-
-        y_axis_formatter = FuncFormatter(format_perc)
-        ax.yaxis.set_major_formatter(FuncFormatter(y_axis_formatter))
-
-        # TODO: Position class needs entry date
-        max_loss_dt = 'TBD'  # pos[pos["trade_pct"] == np.min(pos["trade_pct"])].entry_date.values[0]
-        avg_dit = '0.0'  # = '{:.2f}'.format(np.mean(pos.time_in_pos))
-
-        ax.text(0.5, 8.7, 'Trade Winning %', fontsize=9)
-        ax.text(9.5, 8.7, win_pct_str, fontsize=9, fontweight='bold', horizontalalignment='right')
-
-        ax.text(0.5, 7.7, 'Average Trade %', fontsize=9)
-        ax.text(9.5, 7.7, avg_trd_pct, fontsize=9, fontweight='bold', horizontalalignment='right')
-
-        ax.text(0.5, 6.7, 'Average Win %', fontsize=9)
-        ax.text(9.5, 6.7, avg_win_pct, fontsize=9, fontweight='bold', color='green', horizontalalignment='right')
-
-        ax.text(0.5, 5.7, 'Average Loss %', fontsize=9)
-        ax.text(9.5, 5.7, avg_loss_pct, fontsize=9, fontweight='bold', color='red', horizontalalignment='right')
-
-        ax.text(0.5, 4.7, 'Best Trade %', fontsize=9)
-        ax.text(9.5, 4.7, max_win_pct, fontsize=9, fontweight='bold', color='green', horizontalalignment='right')
-
-        ax.text(0.5, 3.7, 'Worst Trade %', fontsize=9)
-        ax.text(9.5, 3.7, max_loss_pct, color='red', fontsize=9, fontweight='bold', horizontalalignment='right')
-
-        ax.text(0.5, 2.7, 'Worst Trade Date', fontsize=9)
-        ax.text(9.5, 2.7, max_loss_dt, fontsize=9, fontweight='bold', horizontalalignment='right')
-
-        ax.text(0.5, 1.7, 'Avg Days in Trade', fontsize=9)
-        ax.text(9.5, 1.7, avg_dit, fontsize=9, fontweight='bold', horizontalalignment='right')
-
-        ax.text(0.5, 0.7, 'Trades', fontsize=9)
-        ax.text(9.5, 0.7, num_trades, fontsize=9, fontweight='bold', horizontalalignment='right')
-
-        ax.set_title('Trade', fontweight='bold')
-        ax.grid(False)
-        ax.spines['top'].set_linewidth(1.5)
-        ax.spines['bottom'].set_linewidth(1.5)
-        ax.spines['right'].set_visible(False)
-        ax.spines['left'].set_visible(False)
-        ax.get_yaxis().set_visible(False)
-        ax.get_xaxis().set_visible(False)
-        ax.set_ylabel('')
-        ax.set_xlabel('')
-
-        ax.axis([0, 10, 0, 10])
-        return ax
 
     def _plot_txt_time(self, stats, ax=None, **kwargs):
         """
@@ -508,8 +431,8 @@ class TearsheetStatistics(AbstractStatistics):
                 fontweight='bold', color='red' if yly_max_loss_pct < 0 else 'green',
                 horizontalalignment='right')
 
-        # ax.text(0.5, 0.7, 'Positive 12 Month Periods', fontsize=9)
-        # ax.text(9.5, 0.7, num_trades, fontsize=9, fontweight='bold', horizontalalignment='right')
+        ax.text(0.5, 0.7, 'Final Equity', fontsize=9)
+        ax.text(9.5, 0.7, '{:.2f}'.format(stats["equity"][-1]), fontsize=9, fontweight='bold', horizontalalignment='right')
 
         ax.set_title('Time', fontweight='bold')
         ax.grid(False)
@@ -548,14 +471,6 @@ class TearsheetStatistics(AbstractStatistics):
         sns.set_context(rc)
         sns.set_style("whitegrid")
         sns.set_palette("deep", desat=.6)
-
-        """
-
-        
-        ax_txt_trade = plt.subplot(gs[4, 1])
-
-        self._plot_txt_trade(stats, ax=ax_txt_trade)
-        """
         
         vertical_sections = 5
         fig = plt.figure(figsize=(14, vertical_sections * 3.5))

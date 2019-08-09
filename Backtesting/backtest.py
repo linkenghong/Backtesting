@@ -139,6 +139,7 @@ class Backtest(object):
                     results["max_drawdown_pct"] * 100.0
                 )
             )
+            print("Final equity: %0.2f" % results["equity"][-1])
             print(
                 "Cum Returns: %0.2f%%" % (
                     results["total_return"] * 100.0

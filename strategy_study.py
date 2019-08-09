@@ -8,7 +8,7 @@ from Backtesting.backtest import Backtest
 
 class BuyAndHoldStrategy(AbstractStrategy):
     """
-    A testing strategy that simply purchases an asset
+    A testing strategy that simply purchases (longs) an asset
     upon first receipt of the relevant bar event and
     then holds until the completion of a backtest.
     """
@@ -33,13 +33,20 @@ class BuyAndHoldStrategy(AbstractStrategy):
                 )
                 self.events_queue.put(signal)
                 self.invested = True
+            elif self.invested and :
+                signal = SignalEvent(
+                    self.symbol, event.timestamp, "SELL",
+                    suggested_quantity=self.base_quantity
+                )
+                self.events_queue.put(signal)
+                self.invested = False
 
 
 def run(testing, symbol_list, filename):
     # Backtest information
     title = ['Buy and Hold Example on %s' % symbol_list[0]]
     initial_equity = 100000.0
-    start_date = datetime.datetime(2003, 1, 3)
+    start_date = datetime.datetime(2013, 1, 3)
     end_date = datetime.datetime(2013, 1, 30)
 
     # Use the Buy and Hold Strategy
@@ -58,10 +65,9 @@ def run(testing, symbol_list, filename):
     return results
 
 
-
 if __name__ == "__main__":
     # Configuration data
     testing = False
-    symbol_list = ["SPY"]
+    symbol_list = ["AAPL"]
     filename = None
     run(testing, symbol_list, filename)
