@@ -1,5 +1,4 @@
 # coding=gbk
-import datetime
 import os, os.path
 import pandas as pd
 
@@ -28,6 +27,7 @@ class HistoricCSVDataHandler(DataHandler):
         self.symbol_data = {} # 字典:{symbol:DataFrame}
         self.latest_symbol_data = {} # 最新bar，字典：{symbol:bar{close, adj_close, timestamp}}
         self.continue_backtest = True
+        self.need_backtest = True
 
         if symbol_list is not None:
             for symbol in symbol_list:
@@ -35,7 +35,10 @@ class HistoricCSVDataHandler(DataHandler):
 
         self.start_date = start_date
         self.end_date = end_date
-        self.bar_stream = self._merge_sort_symbol_data()
+        self.pre_day = None
+        self.cur_day = None
+        if self.need_backtest:
+            self.bar_stream = self._merge_sort_symbol_data()
 
 
     def subscribe_symbol(self, symbol):
@@ -59,6 +62,7 @@ class HistoricCSVDataHandler(DataHandler):
                     "Could not subscribe symbol %s "
                     "as no data CSV found for pricing." % symbol
                 )
+                self.need_backtest = False
         else:
             print(
                 "Could not subscribe symbol %s "
@@ -76,6 +80,15 @@ class HistoricCSVDataHandler(DataHandler):
             return
         # Obtain all elements of the bar from the dataframe
         symbol = row["Symbol"]
+
+        cur_day = index.date()
+        if self.pre_day == None:
+            self.pre_day = cur_day       
+        if self.cur_day == None:
+            self.cur_day = cur_day
+        
+        self.pre_day = self.cur_day
+        self.cur_day = cur_day
         
         # Create the bar event for the queue
         bev = self._create_event(index, symbol, row)
@@ -112,23 +125,26 @@ class HistoricCSVDataHandler(DataHandler):
         backtesting. In live trading ticks may arrive "out of order".
         """
         df = pd.concat(self.symbol_data.values()).sort_index()
-        start = None
-        end = None
-        if self.start_date is not None:
-            start = df.index.searchsorted(self.start_date)
-        if self.end_date is not None:
-            end = df.index.searchsorted(self.end_date)
+
+        start = self.start_date
+        end = self.end_date
 
         df['colFromIndex'] = df.index
         df = df.sort_values(by=["colFromIndex", "Symbol"])
-        if start is None and end is None:
-            return df.iterrows()
+
+        if start is not None and end is not None:
+            df = df.loc[start:end]
         elif start is not None and end is None:
-            return df.ix[start:].iterrows()
+            df = df.loc[start:]
         elif start is None and end is not None:
-            return df.ix[:end].iterrows()
-        else:
-            return df.ix[start:end].iterrows()
+            df = df.loc[:end]
+
+        if df.empty:
+            print("The backtest period is not in the data!")
+            self.need_backtest = False
+
+        return df.iterrows()
+
 
     def _create_event(self, index, symbol, row):
         """
@@ -136,6 +152,12 @@ class HistoricCSVDataHandler(DataHandler):
         and return a BarEvent
         """
         timestamp = index
+        
+        if self.pre_day == self.cur_day:
+            new_day = False
+        else:
+            new_day = True
+
         open_price = row["Open"]
         high_price = row["High"]
         low_price = row["Low"]
@@ -143,9 +165,9 @@ class HistoricCSVDataHandler(DataHandler):
         adj_close_price = row["Adj Close"]
         volume = int(row["Volume"])
         bev = BarEvent(
-            symbol, timestamp, open_price,
-            high_price, low_price, close_price,
-            volume, adj_close_price
+            symbol, timestamp, new_day,
+            open_price, high_price, low_price,
+            close_price, volume, adj_close_price
         )
         return bev
 

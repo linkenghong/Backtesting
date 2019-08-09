@@ -1,10 +1,10 @@
 from .base import AbstractStatistics
+import Backtesting.statistics.performance as perf
 
 
 from matplotlib.ticker import FuncFormatter
 from matplotlib import cm
 
-import Backtesting.statistics.performance as perf
 
 import pandas as pd
 import numpy as np

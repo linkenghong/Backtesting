@@ -1,11 +1,11 @@
-from .order.suggested import SuggestedOrder
+from ..order.suggested import SuggestedOrder
 from .portfolio import Portfolio
 
 
 class PortfolioHandler(object):
     def __init__(
-        self, initial_cash, events_queue,
-        data_handler, position_sizer, risk_manager
+        self, initial_cash, events_queue, data_handler,
+         position_sizer, risk_manager, output_dir
     ):
         """
         Each PortfolioHandler contains a Portfolio object,
@@ -24,7 +24,8 @@ class PortfolioHandler(object):
         self.data_handler = data_handler
         self.position_sizer = position_sizer
         self.risk_manager = risk_manager
-        self.portfolio = Portfolio(data_handler, initial_cash)
+        self.output_dir = output_dir
+        self.portfolio = Portfolio(data_handler, initial_cash, output_dir)
 
     def _create_order_from_signal(self, signal_event):
         """
@@ -67,6 +68,7 @@ class PortfolioHandler(object):
         modifying how the ExecutionHandler object handles slippage,
         transaction costs, liquidity and market impact.
         """
+        timestamp = fill_event.timestamp
         action = fill_event.action
         symbol = fill_event.symbol
         quantity = fill_event.quantity
@@ -74,8 +76,8 @@ class PortfolioHandler(object):
         commission = fill_event.commission
         # Create or modify the position from the fill info
         self.portfolio.transact_position(
-            action, symbol, quantity,
-            price, commission
+            timestamp, action, symbol,
+            quantity, price, commission
         )
 
     def on_signal(self, signal_event):
@@ -120,3 +122,9 @@ class PortfolioHandler(object):
         Update the portfolio to reflect current market value.
         """
         self.portfolio._update_portfolio()
+
+    def update_portfolio_position(self):
+        """
+        Update the available position.
+        """
+        self.portfolio._update_position()

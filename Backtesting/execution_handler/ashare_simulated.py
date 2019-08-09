@@ -8,7 +8,6 @@ from ..event import (FillEvent, EventType)
 
 class AShareSimulatedExecutionHandler(AbstractExecutionHandler):
 
-
     def __init__(
         self, events_queue, data_handler, portfolio_handler,
         output_dir, slippage=0.01, record=True
@@ -36,7 +35,6 @@ class AShareSimulatedExecutionHandler(AbstractExecutionHandler):
                 "Exchange", "Price",
                 "Commission"
             ]
-            fname = os.path.expanduser(os.path.join(self.output_dir, self.csv_filename))
             with open(fname, 'a', newline='') as csvfile:
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writeheader()
@@ -52,7 +50,7 @@ class AShareSimulatedExecutionHandler(AbstractExecutionHandler):
         )
         if action == "SELL":
             commission += 0.001 * fill_price * quantity
-        return commission
+        return round(commission, 2)
 
     def execute_order(self, event):
         """
@@ -67,35 +65,41 @@ class AShareSimulatedExecutionHandler(AbstractExecutionHandler):
             symbol = event.symbol
             action = event.action
             try:
-                cur_quantity = self.portfolio_handler.portfolio.positions[symbol].quantity
+                cur_quantity = self.portfolio_handler.portfolio.positions[symbol].available_quantity
             except :
                 cur_quantity = 0
             cur_cash = self.portfolio_handler.portfolio.cur_cash
             
-            if event.action == 'SELL' and cur_quantity == 0:
-                print("A share can't short!The order will be cancelled!")
+            if action == 'SELL' and cur_quantity == 0:
+                print(str(timestamp) + ": A share can't short!The order will be cancelled!")
                 return
             
-            if event.action == 'SELL' and event.quantity > cur_quantity:
+            if action == 'SELL' and event.quantity > cur_quantity:
                 quantity = cur_quantity
-                print("Trading volume(%i) is greater than holding amount(%i)!" 
+                print(str(timestamp) + ": Trading volume(%i) is greater than holding amount(%i)! \
+                    Will be traded by holding amount!" 
                       % (event.quantity,cur_quantity))
-                print("Will be traded by holding amount") 
+                
             else:
                 quantity = event.quantity
 
             # Obtain the fill price
             close_price = self.data_handler.get_last_close(symbol)
-            fill_price = close_price + self.slippage
+            if action == 'BUY':
+                fill_price = close_price + self.slippage
+            elif action == 'SELL':
+                fill_price = close_price - self.slippage
+            
 
             # Set a dummy exchange and calculate trade commission
             exchange = "CN"
             commission = self.calculate_ib_commission(quantity, fill_price, action)
 
-            if quantity * fill_price + commission > cur_cash:
-                print("Current cash is %.2f, the transaction cost is %.2f"
+            if action == 'BUY' and quantity * fill_price + commission > cur_cash:
+                print(str(timestamp) + ": Current cash is %.2f, the transaction cost is %.2f. \
+                    Out of cash, the order will be cancelled!"
                      % (cur_cash, (quantity * fill_price + commission)))
-                print("Out of cash, the order will be cancelled!")
+                
             else:
                 # Create the FillEvent and place on the events queue
                 fill_event = FillEvent(

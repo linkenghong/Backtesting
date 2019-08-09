@@ -9,7 +9,7 @@ from .event import EventType
 from .data_handler.historic_csv_data_handler import HistoricCSVDataHandler
 from .position_sizer.fixed import FixedPositionSizer
 from .risk_manager.example import ExampleRiskManager
-from .portfolio_handler import PortfolioHandler
+from .portfolio_handler.portfolio_handler import PortfolioHandler
 from .execution_handler.ashare_simulated import AShareSimulatedExecutionHandler
 from .statistics.tearsheet import TearsheetStatistics
 
@@ -65,7 +65,8 @@ class Backtest(object):
                 self.events_queue,
                 self.data_handler,
                 self.position_sizer,
-                self.risk_manager
+                self.risk_manager,
+                self.output_dir
             )
 
         if self.execution_handler is None:
@@ -83,9 +84,13 @@ class Backtest(object):
                 self.title, self.benchmark
             )
 
+        self.strategy.set_portfolio(self.portfolio_handler)
+
     def _continue_loop_condition(self):
         return self.data_handler.continue_backtest
 
+    def _need_backtest_condition(self):
+        return self.data_handler.need_backtest
             
     def _run_session(self):
         """
@@ -106,6 +111,8 @@ class Backtest(object):
             else:
                 if event is not None:
                     if event.type == EventType.BAR:
+                        if event.new_day == True:
+                            self.portfolio_handler.update_portfolio_position()
                         self.cur_time = event.timestamp
                         self.strategy.calculate_signals(event)
                         self.portfolio_handler.update_portfolio_value()
@@ -120,27 +127,28 @@ class Backtest(object):
                         raise NotImplemented("Unsupported event.type '%s'" % event.type)
 
     def start_trading(self, testing=False):
-        """
-        Runs either a backtest or live session, and outputs performance when complete.
-        """
-        self._run_session()
-        results = self.statistics.get_results()
-        print("------------------------------------------------")
-        print("Backtest complete.")
-        print("Sharpe Ratio: %0.2f" % results["sharpe"])
-        print(
-            "Max Drawdown: %0.2f%%" % (
-                results["max_drawdown_pct"] * 100.0
+
+        if self._need_backtest_condition():
+            self._run_session()
+            results = self.statistics.get_results()
+            print("------------------------------------------------")
+            print("Backtest complete.")
+            print("Sharpe Ratio: %0.2f" % results["sharpe"])
+            print(
+                "Max Drawdown: %0.2f%%" % (
+                    results["max_drawdown_pct"] * 100.0
+                )
             )
-        )
-        print(
-            "Cum Returns: %0.2f%%" % (
-                results["total_return"] * 100.0
+            print(
+                "Cum Returns: %0.2f%%" % (
+                    results["total_return"] * 100.0
+                )
             )
-        )
-        if not testing:
-            self.statistics.save()
-            #self.statistics.plot_results()
-        return results
+            if not testing:
+                self.statistics.save()
+                #self.statistics.plot_results()
+            return results
+        else:
+            return None
  
 

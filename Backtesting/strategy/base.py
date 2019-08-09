@@ -23,6 +23,33 @@ class AbstractStrategy(object):
         """
         raise NotImplementedError("Should implement calculate_signals()")
 
+    def set_portfolio(self, portfolio_handler):
+        self.portfolio_handler = portfolio_handler
+    
+    def get_symbol_position(self, symbol):
+
+        key = ["symbol", "quantity", "unavailable_quantity",
+        "available_quantity", "price", "total_commission",
+        "avg_price", "market_value"]
+
+        position_dict = {k:0 for k in key}
+        position_dict["symbol"] = symbol
+        try:
+            position = self.portfolio_handler.portfolio.positions[symbol]
+        except:
+            pass
+        else:
+            position_dict["quantity"] = position.quantity
+            position_dict["unavailable_quantity"] = position.unavailable_quantity
+            position_dict["available_quantity"] = position.available_quantity
+            position_dict["price"] = position.price
+            position_dict["total_commission"] = position.total_commission
+            position_dict["avg_price"] = position.avg_price
+            position_dict["market_value"] = position.market_value
+        
+        return position_dict
+
+
 
 class Strategies(AbstractStrategy):
     """

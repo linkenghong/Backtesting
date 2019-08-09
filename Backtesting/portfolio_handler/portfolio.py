@@ -1,18 +1,41 @@
 # coding=gbk
+import datetime
+import os
+import csv
+
 from .position import Position
 
 class Portfolio(object):
-    def __init__(self, data_handler, cash):
+    def __init__(self, data_handler, cash, output_dir):
         """
         On creation, the Portfolio object contains no
         positions and all values are "reset" to the initial cash.
-
         """
         self.data_handler = data_handler
         self.equity = cash
         self.cur_cash = cash
+        self.output_dir = output_dir
         self.positions = {}
         self.closed_positions = []
+
+        now = datetime.datetime.utcnow().date()
+        self.csv_filename = "positionlog_" + now.strftime("%Y-%m-%d") + ".csv"
+            
+        try:
+            self.fname = os.path.expanduser(os.path.join(self.output_dir, self.csv_filename))
+            os.remove(self.fname)
+        except (IOError, OSError):
+            pass
+        # Write new file header
+        fieldnames = [
+            "Timestamp", "Symbol","Position",
+            "Price", "Avg_price", "Market_value",
+            "Commission"
+        ]
+        with open(self.fname, 'a', newline='') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+
 
 
     def _update_portfolio(self):
@@ -27,6 +50,12 @@ class Portfolio(object):
             pt.update_market_value(cur_price)
             self.equity += pt.market_value
             
+    def _update_position(self):
+        """
+        Update the available position of all symbol.
+        """
+        for symbol in self.positions:
+            self.positions[symbol].update_position()
 
     def _add_position(
         self, action, symbol,
@@ -75,10 +104,6 @@ class Portfolio(object):
             cur_price = self.data_handler.get_last_close(symbol)
             self.positions[symbol].update_market_value(cur_price)
 
-            if self.positions[symbol].quantity == 0:
-                closed = self.positions.pop(symbol)
-                self.closed_positions.append(closed)
-
             self._update_portfolio()
         else:
             print(
@@ -87,7 +112,7 @@ class Portfolio(object):
             )
 
     def transact_position(
-        self, action, symbol,
+        self, timestamp, action, symbol,
         quantity, transact_price, commission
     ):
         """
@@ -102,7 +127,7 @@ class Portfolio(object):
             self.cur_cash -= ((quantity * transact_price) + commission)
         elif action == "SELL":
             self.cur_cash += ((quantity * transact_price) - commission)
-
+   
         if symbol not in self.positions:
             self._add_position(
                 action, symbol, quantity,
@@ -113,4 +138,9 @@ class Portfolio(object):
                 action, symbol, quantity,
                 transact_price, commission
             )
+        self.positions[symbol].record_position(self.fname, timestamp)
+        
+        if self.positions[symbol].quantity == 0:
+            closed = self.positions.pop(symbol)
+            self.closed_positions.append(closed)
 

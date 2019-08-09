@@ -1,3 +1,4 @@
+import csv
 
 class Position(object):
     def __init__(
@@ -6,9 +7,7 @@ class Position(object):
         cur_price
     ):
         """
-        Set up the initial "account" of the Position to be
-        zero for most items, with the exception of the initial
-        purchase/sale.
+        Set up the initial "account" of the Position.
 
         Then calculate the initial values and finally update the
         market value of the transaction.
@@ -16,7 +15,10 @@ class Position(object):
         self.action = action
         self.symbol = symbol
         self.quantity = init_quantity
+        self.unavailable_quantity = init_quantity
+        self.available_quantity = 0
         self.init_price = init_price
+        self.price = round(init_price, 2)
         self.init_commission = init_commission
         self.total_commission = init_commission
         self.avg_price = 0
@@ -28,30 +30,29 @@ class Position(object):
 
     def update_market_value(self, price):
         """
-        The market value is tricky to calculate as we only have
-        access to the top of the order book through Interactive
-        Brokers, which means that the true redemption price is
-        unknown until executed.
-
-        However, it can be estimated via the mid-price of the
-        bid-ask spread. Once the market value is calculated it
-        allows calculation of the unrealised and realised profit
-        and loss of any transactions.
+        Update market values with the latest price.
         """
-        self.market_value = self.quantity * price
+        self.market_value = round(self.quantity * price, 2)
         
+
+    def update_position(self):
+        """
+        At A share, trading rule is T+1, when it is a new day, the 
+        available position should be update.
+        """
+        self.available_quantity += self.unavailable_quantity
+        self.unavailable_quantity = 0
+
 
     def transact_shares(self, action, quantity, price, commission):
         """
         Calculates the adjustments to the Position that occur
         once new shares are bought and sold.
-
-        Takes care to update the average bought/sold, total
-        bought/sold, the cost basis and PnL calculations,
-        as carried out through Interactive Brokers TWS.
         """
+        self.price = round(price, 2)
         self.total_commission += commission
         direction = 1 if action == "BUY" else -1
+        self.unavailable_quantity += quantity
         lastest_quantity = self.quantity + direction * quantity
         if lastest_quantity > 0:
             self.avg_price = round((
@@ -60,4 +61,13 @@ class Position(object):
             ) / lastest_quantity , 2)
 
         self.quantity = lastest_quantity
+
+    def record_position(self, fname, timestamp):
+        with open(fname, 'a', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow([
+                timestamp, self.symbol, self.quantity,
+                self.price, self.avg_price, self.market_value,
+                self.total_commission
+            ])
 

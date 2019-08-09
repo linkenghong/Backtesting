@@ -17,7 +17,7 @@ class BarEvent(Event):
     via common data providers.
     """
     def __init__(
-        self, symbol, timestamp,
+        self, symbol, timestamp, new_day,
         open_price, high_price, low_price,
         close_price, volume, adj_close_price=None
     ):
@@ -42,6 +42,7 @@ class BarEvent(Event):
         self.type = EventType.BAR
         self.symbol = symbol
         self.timestamp = timestamp
+        self.new_day = new_day
         self.open_price = open_price
         self.high_price = high_price
         self.low_price = low_price
@@ -111,7 +112,7 @@ class FillEvent(Event):
         quantity - The filled quantity.
         action - The action of fill ('BUY' or 'SELL')
         price - The holdings value in dollars.
-        commission - An optional commission sent from IB.
+        commission - An optional commission.
         """
         self.type = EventType.FILL
         self.timestamp = timestamp
