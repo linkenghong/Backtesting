@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 from .event import EventType
 from .data_handler.historic_csv_data_handler import HistoricCSVDataHandler
-from .position_sizer.fixed import FixedPositionSizer
+from .position_sizer.naive import NaivePositionSizer
 from .risk_manager.example import ExampleRiskManager
 from .portfolio_handler.portfolio_handler import PortfolioHandler
 from .execution_handler.ashare_simulated import AShareSimulatedExecutionHandler
@@ -54,7 +54,7 @@ class Backtest(object):
             )
 
         if self.position_sizer is None:
-            self.position_sizer = FixedPositionSizer()
+            self.position_sizer = NaivePositionSizer()
 
         if self.risk_manager is None:
             self.risk_manager = ExampleRiskManager()
